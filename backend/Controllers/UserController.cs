@@ -26,7 +26,7 @@ public class UserController : ControllerBase
 
     // GET: api/User
     [HttpGet]
-    public string GetUsers()
+    public ActionResult<IEnumerable<User>> GetUsers()
     {
         // IEnumerable คืออะไร
         // IEnumerable เป็น interface ใน .NET Framework ที่ใช้แทน collection ของ object
@@ -41,79 +41,8 @@ public class UserController : ControllerBase
         //     Console.WriteLine($"{user.Id} - {user.Username}");
         // }
 
-        //return Ok(_users);
-
-        return "Hello User";
+        return Ok(_users);
     }
-    // GET: api/User
-    [HttpGet("welcome")]
-    public string WelcomeUser()
-    {
-        // IEnumerable คืออะไร
-        // IEnumerable เป็น interface ใน .NET Framework ที่ใช้แทน collection ของ object
-        // interface นี้กำหนด method เพียงตัวเดียวคือ GetEnumerator()
-        // GetEnumerator() : method นี้ return enumerator
-        // enumerator : object ที่ใช้วนซ้ำผ่าน collection
-        // ในที่นี้เราใช้ IEnumerable ในการ return ข้อมูลของ users
-
-        // วนซ้ำผ่าน collection โดยใช้ foreach
-        // foreach (var user in _users)
-        // {
-        //     Console.WriteLine($"{user.Id} - {user.Username}");
-        // }
-
-        //return Ok(_users);
-
-        return "welcome";
-    }
-    // GET: api/User
-    [HttpPost]
-    public string PostUser()
-    {
-        // IEnumerable คืออะไร
-        // IEnumerable เป็น interface ใน .NET Framework ที่ใช้แทน collection ของ object
-        // interface นี้กำหนด method เพียงตัวเดียวคือ GetEnumerator()
-        // GetEnumerator() : method นี้ return enumerator
-        // enumerator : object ที่ใช้วนซ้ำผ่าน collection
-        // ในที่นี้เราใช้ IEnumerable ในการ return ข้อมูลของ users
-
-        // วนซ้ำผ่าน collection โดยใช้ foreach
-        // foreach (var user in _users)
-        // {
-        //     Console.WriteLine($"{user.Id} - {user.Username}");
-        // }
-
-        //return Ok(_users);
-
-        return "post done";
-    }
-    
-    [HttpPost]
-    public string PutUser()
-    {
-        // IEnumerable คืออะไร
-        // IEnumerable เป็น interface ใน .NET Framework ที่ใช้แทน collection ของ object
-        // interface นี้กำหนด method เพียงตัวเดียวคือ GetEnumerator()
-        // GetEnumerator() : method นี้ return enumerator
-        // enumerator : object ที่ใช้วนซ้ำผ่าน collection
-        // ในที่นี้เราใช้ IEnumerable ในการ return ข้อมูลของ users
-
-        // วนซ้ำผ่าน collection โดยใช้ foreach
-        // foreach (var user in _users)
-        // {
-        //     Console.WriteLine($"{user.Id} - {user.Username}");
-        // }
-
-        //return Ok(_users);
-
-        return "put done";
-    }
-
-
-
-
-
-
 
     // GET: api/User/{id}
     [HttpGet("{id}")]
@@ -129,12 +58,12 @@ public class UserController : ControllerBase
 
 
     // POST: api/User
-    // [HttpPost]
-    // public ActionResult<User> CreateUser([FromBody] User user)
-    // {
-    //     _users.Add(user);
-    //     return CreatedAtAction(nameof(GetUser), new { id = user.Id }, user);
-    // }
+    [HttpPost]
+    public ActionResult<User> CreateUser([FromBody] User user)
+    {
+        _users.Add(user);
+        return CreatedAtAction(nameof(GetUser), new { id = user.Id }, user);
+    }
 
     // PUT: api/User/{id}
     [HttpPut("{id}")]
@@ -178,6 +107,5 @@ public class UserController : ControllerBase
         _users.Remove(user);
         return NoContent();
     }
-
 
 }

@@ -32,3 +32,4 @@ D:\private\course\fullstack\hongsa-power-rtms\backend\obj\Debug\net10.0\Hongsa.R
 D:\private\course\fullstack\hongsa-power-rtms\backend\obj\Debug\net10.0\Hongsa.Rtms.Api.genruntimeconfig.cache
 D:\private\course\fullstack\hongsa-power-rtms\backend\obj\Debug\net10.0\ref\Hongsa.Rtms.Api.dll
 D:\private\course\fullstack\hongsa-power-rtms\backend\bin\Debug\net10.0\Scalar.AspNetCore.dll
+D:\private\course\fullstack\hongsa-power-rtms\backend\obj\Debug\net10.0\Hongsa.Rtms.Api.sourcelink.json
