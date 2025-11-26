@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace Hongsa.Rtms.Api.Controllers;
 
-//[Authorize] // กำหนดว่า API นี้ต้องมีการ Login ก่อนเข้าถึง
+[Authorize] // กำหนดว่า API นี้ต้องมีการ Login ก่อนเข้าถึง
 [ApiController]
 [Route("api/[controller]")]
 public class ProductController : ControllerBase
@@ -21,7 +21,6 @@ public class ProductController : ControllerBase
 
     // ทดสอบเขียนฟังก์ชันการเชื่อมต่อ database
     // GET: /api/Product/testconnectdb
-    [Authorize]
     [HttpGet("testconnectdb")]
     public IActionResult TestConnection()
     {
@@ -72,7 +71,6 @@ public class ProductController : ControllerBase
 
     // ฟังก์ชันสำหรับการดึงข้อมูลสินค้าตาม id
     // GET: /api/Product/{id}
-    [Authorize]
     [HttpGet("{id}")]
     public ActionResult<Product> GetProduct(int id)
     {
