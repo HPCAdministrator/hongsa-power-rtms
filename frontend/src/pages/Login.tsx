@@ -1,34 +1,50 @@
-
-import { useState } from "react"
-import { Link } from "react-router"
-import { User, Lock, ArrowRight } from "lucide-react"
+import { useEffect, useState } from "react"
+import { Link, useNavigate } from "react-router"
+import { useForm } from "react-hook-form"
+import { Eye, EyeOff, User, Lock, ArrowRight } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { useEffect } from "react"
-import { useForm } from 'react-hook-form'
-import { authLogin } from "@/services/apiAuth"
+import { authLogin, type LoginData } from "@/services/apiAuth"
+import { toast } from "sonner"
+
 
 function Login() {
 
-  const [showPassword, setShowPassword] = useState(false)
-  const { register, handleSubmit, formState: { errors } } = useForm()
+  const navigate = useNavigate();
 
   useEffect(() => {
-    document.title = "Hongsa Power RTMS | Login"
-  }, []);
+    document.title = "Login | Hongsa Power RTMS";
+  }, [])
 
-  const onSubmit = async (data: unknown) => {
-    console.log(data);
-    try{
-      const response = await await authLogin(data as any);
-      console.log("Login successful:", response);
-    }
-    catch(error){
-      console.error("Login failed:", error);
+  const { register, handleSubmit, formState: { errors } } = useForm<LoginData>()
+
+  const onSubmit = async (data: LoginData) => {
+    console.log(data)
+    try {
+      const response = await authLogin(data)
+      console.log("Login successful:", response)
+      // Store Auth Data
+      localStorage.setItem("token", response.token)
+      localStorage.setItem("roles", JSON.stringify(response.roles))
+      localStorage.setItem("username", data.username)
+      localStorage.setItem("firstName", response.firstName)
+      localStorage.setItem("lastName", response.lastName)
+      toast.success("เข้าสู่ระบบสำเร็จ", {
+        description: "ยินดีต้อนรับกลับ",
+      })
+      navigate("/backend");
+    } catch (error) {
+      console.error("Login failed:", error)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const errorMessage = (error as any).response?.data?.message || "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง"
+      toast.error("เข้าสู่ระบบไม่สำเร็จ", {
+        description: errorMessage,
+      })
     }
   }
 
+  const [showPassword, setShowPassword] = useState(false)
   return (
     <div className="flex flex-col space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col space-y-2 text-center">
@@ -38,54 +54,61 @@ function Login() {
         </p>
       </div>
 
-      <div className="space-y-6">
-
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          <div className="space-y-2">
-            <Label>ชื่อผู้ใช้งาน / อีเมล</Label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-              <Input
-                className={`pl-10 ${errors.username ? "border-red-500 focus-visible:ring-red-500" : ""}`}
-                placeholder="username หรือ email@example.com"
-                {...register("username", {required: "กรุณาระบุชื่อผู้ใช้งานหรืออีเมล"})}
-              />
-            </div>
-            {errors.username && <p className="text-sm text-red-600 mt-1">{errors.username.message as string}</p>}
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <div className="space-y-2">
+          <Label>ชื่อผู้ใช้งาน (Username)</Label>
+          <div className="relative">
+            <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+            <Input 
+              id="username"
+              {...register("username", { 
+                required: "กรอกชื่อผู้ใช้งาน (username)" ,
+                minLength: { 
+                  value: 3, message: "ความยาวอย่างน้อย 3 ตัวอักษร" 
+                }
+              })}
+              className={`pl-10 ${errors.username ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+              placeholder="username" 
+            />
           </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>รหัสผ่าน</Label>
-              <Button variant="link" className="text-xs" asChild>
-                <Link to="/auth/forgot-password">
-                  ลืมรหัสผ่าน?
-                </Link>
-              </Button>
-            </div>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-              <Input 
-                className={`pl-10 ${errors.password ? "border-red-500 focus-visible:ring-red-500" : ""}`}
-                type={showPassword ? "text" : "password"} 
-                placeholder="••••••••"
-                {...register("password", {required: "กรุณาระบุรหัสผ่าน"})}
-              />
-              <button 
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-              >
-              </button>
-            </div>
-            {errors.password && <p className="text-sm text-red-600 mt-1">{errors.password.message as string}</p>}
-
+          {errors.username && <p className="text-red-500 text-xs">{errors.username.message as string}</p>}
+        </div>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label>รหัสผ่าน (Password)</Label>
+            <Button variant="link" className="text-xs" asChild>
+              <Link to="/auth/forgot-password">
+                ลืมรหัสผ่าน?
+              </Link>
+            </Button>
           </div>
-          <Button type="submit" className="w-full group cursor-pointer">
-            เข้าสู่ระบบ 
-            <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-          </Button>
-        </form>
-      </div>
+          <div className="relative">
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+            <Input 
+              id="password"
+              {...register("password", { 
+                required: "กรอกรหัสผ่าน",
+                minLength: { value: 8, message: "ความยาวอย่างน้อย 8 ตัวอักษร" } 
+              })}
+              className={`pl-10 pr-10 ${errors.password ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+              type={showPassword ? "text" : "password"} 
+              placeholder="••••••••" 
+            />
+            <button 
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+            >
+              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
+          {errors.password && <p className="text-red-500 text-xs">{errors.password.message as string}</p>}
+        </div>
+        <Button type="submit" className="w-full group cursor-pointer">
+          เข้าสู่ระบบ 
+          <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+        </Button>
+      </form>
 
       <div className="relative">
         <div className="absolute inset-0 flex items-center">

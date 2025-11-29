@@ -62,13 +62,13 @@ public class AuthenticateController: ControllerBase
         }
 
         // สร้าง User
-        // ใช้ ApllicationUser แทน IdentityUser
+        // ให้ใช้ ApplicationUser แทน IdentityUser
         ApplicationUser user = new()
         {
             Email = model.Email,
             SecurityStamp = Guid.NewGuid().ToString(),
             UserName = model.Username,
-            // map ข้อมูลฟิลด์ใหม่
+            // Map ข้อมูลใหม่ลงไป
             FirstName = model.FirstName,
             LastName = model.LastName,
             EmployeeId = model.EmployeeId,
@@ -97,9 +97,13 @@ public class AuthenticateController: ControllerBase
             await _roleManager.CreateAsync(new IdentityRole(UserRolesModel.Admin));
         }
 
-        if (await _roleManager.RoleExistsAsync(UserRolesModel.User))
+        if (!await _roleManager.RoleExistsAsync(UserRolesModel.User))
         {
             await _roleManager.CreateAsync(new IdentityRole(UserRolesModel.User));
+        }
+
+        if (await _roleManager.RoleExistsAsync(UserRolesModel.User))
+        {
             await _userManager.AddToRoleAsync(user, UserRolesModel.User);
         }
 
@@ -145,13 +149,13 @@ public class AuthenticateController: ControllerBase
         }
 
         // สร้าง User
-        // ใช้ ApllicationUser แทน IdentityUser
+        // ให้ใช้ ApplicationUser แทน IdentityUser
         ApplicationUser user = new()
         {
             Email = model.Email,
             SecurityStamp = Guid.NewGuid().ToString(),
             UserName = model.Username,
-            // map ข้อมูลฟิลด์ใหม่
+            // Map ข้อมูลใหม่ลงไป
             FirstName = model.FirstName,
             LastName = model.LastName,
             EmployeeId = model.EmployeeId,
@@ -207,6 +211,7 @@ public class AuthenticateController: ControllerBase
             var authClaims = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, user.UserName!),
+                new Claim(ClaimTypes.NameIdentifier, user.Id), // Add User ID to Claims
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 
@@ -220,7 +225,10 @@ public class AuthenticateController: ControllerBase
             return Ok(new 
             {
                 token = new JwtSecurityTokenHandler().WriteToken(token),
-                expiration = token.ValidTo
+                expiration = token.ValidTo,
+                roles = userRoles,
+                firstName = user.FirstName,
+                lastName = user.LastName
             });
         }
 
@@ -241,7 +249,7 @@ public class AuthenticateController: ControllerBase
         var token = new JwtSecurityToken(
             issuer: _configuration["JWT:ValidIssuer"],
             audience: _configuration["JWT:ValidAudience"],
-            expires: currentTime.AddDays(1),
+            expires: currentTime.AddDays(1), // อายุของ Token 1 วัน
             claims: authClaims,
             signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
         );

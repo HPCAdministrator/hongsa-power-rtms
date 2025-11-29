@@ -1,20 +1,25 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 using Hongsa.Rtms.Api.Models;
 using Hongsa.Rtms.Api.DTOs;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Identity;
 
 namespace Hongsa.Rtms.Api.Controllers;
 
+[Authorize]
 [Route("api/[controller]")]
 [ApiController]
 public class ForecastController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
+    private readonly UserManager<ApplicationUser> _userManager;
 
-    public ForecastController(ApplicationDbContext context)
+    public ForecastController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
     {
         _context = context;
+        _userManager = userManager;
     }
 
     // 1. GET Config (Master Data)
@@ -31,11 +36,10 @@ public class ForecastController : ControllerBase
     public async Task<IActionResult> SubmitPlan([FromBody] SubmitPlanDto dto)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); // ดึง ID คน login
-        //if (userId == null) return Unauthorized();
-        if (userId == null){
-            var firstUser = await _context.Users.FirstOrDefaultAsync();
-            if (firstUser == null) return Unauthorized();
-            userId = firstUser.Id;
+        
+        if (string.IsNullOrEmpty(userId))
+        {
+             return Unauthorized("User ID not found in token.");
         }
 
         // เช็คว่าเคยมี Plan วันนี้ไหม เพื่อทำ Revision
@@ -68,6 +72,9 @@ public class ForecastController : ControllerBase
 
         _context.ForecastRequests.Add(request);
         await _context.SaveChangesAsync();
+
+        // Notify Admins
+        // (Notification logic can be added here)
 
         return Ok(new { Message = "Plan submitted successfully", Revision = nextRev });
     }
@@ -127,7 +134,7 @@ public class ForecastController : ControllerBase
                 StartTime = item.StartTime.ToString(@"hh\:mm"),
                 EndTime = item.EndTime.ToString(@"hh\:mm"),
                 StatusID = item.StatusID,
-                StatusName = item.StatusConfig?.StatusName ?? "Unknown",
+                StatusName = item.StatusConfig?.StatusName ?? "-",
                 CalculatedLoadMW = calcMW,
                 SourceLogic = logic
             });
@@ -141,6 +148,8 @@ public class ForecastController : ControllerBase
     public async Task<IActionResult> ApprovePlan([FromBody] ApprovePlanDto dto)
     {
         var adminId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (adminId == null) return Unauthorized("No user found in database.");
+
         var request = await _context.ForecastRequests.FindAsync(dto.RequestID);
         if (request == null) return NotFound();
 
@@ -185,7 +194,20 @@ public class ForecastController : ControllerBase
     public async Task<IActionResult> ReturnPlan([FromBody] ReturnPlanDto dto)
     {
         var adminId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        var request = await _context.ForecastRequests.FindAsync(dto.RequestID);
+        // if (adminId == null) return Unauthorized("No user found in database.");
+
+        // กรณี Dev/Test: ถ้าไม่ได้ Login ให้ใช้ User คนแรกใน DB แทน
+        if (adminId == null)
+        {
+            var firstUser = await _context.Users.FirstOrDefaultAsync();
+            if (firstUser != null) adminId = firstUser.Id;
+            else return Unauthorized("No user found in database.");
+        }
+
+        var request = await _context.ForecastRequests
+            .Include(r => r.Submitter)
+            .FirstOrDefaultAsync(r => r.RequestID == dto.RequestID);
+
         if (request == null) return NotFound();
 
         request.RequestStatus = "Returned";
@@ -195,9 +217,41 @@ public class ForecastController : ControllerBase
 
         await _context.SaveChangesAsync();
 
-        // TODO: Trigger Email Service Here
-        // _emailService.SendReturnEmail(request.SubmittedBy, dto.Comment);
+        // Trigger Email Service to notify User
 
         return Ok(new { Message = "Plan Returned" });
+    }
+
+    // 7. GET My History (User)
+    [HttpGet("history")]
+    public async Task<IActionResult> GetMyHistory()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null) return Unauthorized();
+
+        var list = await _context.ForecastRequests
+            .Include(r => r.Items)
+            .ThenInclude(i => i.StatusConfig)
+            .Where(r => r.SubmittedBy == userId)
+            .OrderByDescending(r => r.TargetDate)
+            .ThenByDescending(r => r.RevisionNo)
+            .ToListAsync();
+
+        return Ok(list);
+    }
+
+    // 8. GET All History (Admin)
+    [HttpGet("all-history")]
+    public async Task<IActionResult> GetAllHistory()
+    {
+        var list = await _context.ForecastRequests
+            .Include(r => r.Submitter)
+            .Include(r => r.Items)
+            .ThenInclude(i => i.StatusConfig)
+            .OrderByDescending(r => r.TargetDate)
+            .ThenByDescending(r => r.SubmittedDate)
+            .ToListAsync();
+
+        return Ok(list);
     }
 }

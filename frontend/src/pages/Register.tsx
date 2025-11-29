@@ -1,4 +1,4 @@
-import { Link } from "react-router"
+import { Link, useNavigate } from "react-router"
 import { User, Mail, Lock, IdCard, Store } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -6,12 +6,15 @@ import { Label } from "@/components/ui/label"
 import { useEffect } from "react"
 import { useForm } from 'react-hook-form'
 import { authRegister, type RegisterData } from "@/services/apiAuth"
+import { toast } from "sonner"
 
 interface RegisterFormData extends RegisterData {
   confirmPassword: string;
 }
 
 function Register() {
+
+  const navigate = useNavigate();
 
   // ตั้ง title หน้า
   useEffect(() => {
@@ -26,11 +29,17 @@ function Register() {
   const onSubmit = async (data: RegisterData) => {
     console.log(data);
     try{
-      const response = await authRegister(data);
-      console.log("Register successful:", response);
+      await authRegister(data);
+      toast.success("ลงทะเบียนสำเร็จ", {
+          description: "บัญชีของคุณถูกสร้างเรียบร้อยแล้ว",
+      })
+      navigate("/auth/login");
     }
     catch(error){
-      console.error("Register failed:", error);
+      const errorMessage = (error as any).response?.data?.message || "เกิดข้อผิดพลาดในการลงทะเบียน";
+      toast.error("ลงทะเบียนไม่สำเร็จ", {
+          description: errorMessage,
+      })
     }
   }
 

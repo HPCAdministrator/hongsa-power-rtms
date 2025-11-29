@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using Microsoft.Extensions.Options;
+using Hongsa.Rtms.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +14,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddHostedService<SimulationWorker>();
 
 //Adding Identity
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
